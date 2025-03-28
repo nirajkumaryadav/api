@@ -1,18 +1,19 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
+from flask_migrate import Migrate
 from models import db, App
+from config import config
 import os
 
-# Add this at the beginning of your app.py to see where SQLite is looking for the database
-print(f"Database path: {os.path.abspath('apps.db')}")
-
+# Create app with environment-based config
+env = os.environ.get('FLASK_ENV', 'default')
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///apps.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config.from_object(config[env])
+CORS(app)
 
 # Initialize the database with the app
 db.init_app(app)
+migrate = Migrate(app, db)
 
 # Create database tables
 with app.app_context():
@@ -29,22 +30,32 @@ def about():
 # API Endpoints
 @app.route("/add-app", methods=["POST"])
 def add_app():
-    data = request.json
-    
-    if not data or not all(k in data for k in ("app_name", "version")):
-        return jsonify({"error": "Missing required fields"}), 400
-    
-    new_app = App(
-        app_name=data["app_name"],
-        version=data["version"],
-        description=data.get("description", ""),
-        author=data.get("author", "")  # Add this line to handle the author field
-    )
-    
-    db.session.add(new_app)
-    db.session.commit()
-    
-    return jsonify({"message": "App added successfully", "app": new_app.to_dict()}), 201
+    try:
+        data = request.json
+        
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+        
+        if not all(k in data for k in ("app_name", "version")):
+            return jsonify({"error": "Missing required fields (app_name and version)"}), 400
+        
+        new_app = App(
+            app_name=data["app_name"],
+            version=data["version"],
+            description=data.get("description", ""),
+            author=data.get("author", "")
+        )
+        
+        db.session.add(new_app)
+        db.session.commit()
+        
+        return jsonify({"message": "App added successfully", "app": new_app.to_dict()}), 201
+    except Exception as e:
+        import traceback
+        app.logger.error(f"Error adding app: {str(e)}")
+        app.logger.error(traceback.format_exc())
+        db.session.rollback()  # Important: roll back the session on error
+        return jsonify({"error": "Failed to add app", "details": str(e)}), 500
 
 @app.route("/get-app/<int:id>", methods=["GET"])
 def get_app(id):

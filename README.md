@@ -1,25 +1,51 @@
 # Flask API for App Management
 
-This API allows you to manage application details including creating, retrieving, updating, and deleting app records.
+A robust REST API built with Flask for managing application details, supporting complete CRUD operations with SQLite database storage and migration management.
 
 ## Features
 
-- Create new app entries with name, version, description, and author
-- Retrieve individual app details by ID
-- Get a list of all apps
-- Update existing app information
-- Delete apps
-- Web interface for basic navigation
+- **Complete CRUD Operations**:
+  - Create new app entries with name, version, description, and author
+  - Retrieve individual app details by ID
+  - Get a list of all apps
+  - Update existing app information
+  - Delete apps
+- **Advanced Data Validation**: Automatic validation of inputs with sensible defaults
+- **Database Features**: 
+  - SQLite database with migration support
+  - Indexed fields for performance
+  - Relationship modeling for app versions
+- **Environment Configuration**: Development, testing, and production environments
+- **Web Interface**: Basic navigation UI for demonstration
+- **Error Handling**: Comprehensive error handling and logging
 
 ## API Endpoints
 
-| Endpoint | Method | Description | Required Parameters |
-|----------|--------|-------------|---------------------|
-| `/add-app` | POST | Add a new app | `app_name`, `version` |
-| `/get-app/{id}` | GET | Retrieve app by ID | `id` (in URL) |
-| `/get-all-apps` | GET | Retrieve all apps | None |
-| `/update-app/{id}` | PUT | Update an app | `id` (in URL) |
-| `/delete-app/{id}` | DELETE | Delete an app | `id` (in URL) |
+| Endpoint | Method | Description | Required Parameters | Optional Parameters |
+|----------|--------|-------------|---------------------|---------------------|
+| `/add-app` | POST | Add a new app | `app_name`, `version` | `description`, `author` |
+| `/get-app/{id}` | GET | Retrieve app by ID | `id` (in URL) | None |
+| `/get-all-apps` | GET | Retrieve all apps | None | None |
+| `/update-app/{id}` | PUT | Update an app | `id` (in URL) | `app_name`, `version`, `description`, `author` |
+| `/delete-app/{id}` | DELETE | Delete an app | `id` (in URL) | None |
+
+## Database Schema
+
+### App Table
+- `id`: Integer, Primary Key
+- `app_name`: String(100), Not Null, Indexed
+- `version`: String(20), Not Null
+- `description`: Text, Nullable
+- `created_at`: DateTime, Default: Current timestamp, Indexed
+- `author`: String(100), Nullable
+- `updated_at`: DateTime, Auto-updates on change
+
+### AppVersion Table (Relationship)
+- `id`: Integer, Primary Key
+- `app_id`: Integer, Foreign Key to App.id
+- `version_number`: String(20), Not Null
+- `release_date`: DateTime, Default: Current timestamp
+- `release_notes`: Text, Nullable
 
 ## Setup and Installation
 
@@ -47,8 +73,21 @@ source .venv/bin/activate  # On Linux/Mac
 pip install -r requirements.txt
 ```
 
-3. Run the Flask application:
+3. Set up the database with migrations:
 ```bash
+flask db init     # Only if migrations folder doesn't exist
+flask db migrate  # Create migration script
+flask db upgrade  # Apply migrations to the database
+```
+
+4. Run the Flask application:
+```bash
+# Development mode
+set FLASK_ENV=development  # On Windows
+export FLASK_ENV=development  # On Linux/Mac
+flask run
+
+# Or use default configuration
 flask run
 ```
 Or use VS Code's Run and Debug functionality.
@@ -59,7 +98,7 @@ Or use VS Code's Run and Debug functionality.
 ```bash
 curl -X POST http://127.0.0.1:5000/add-app \
   -H "Content-Type: application/json" \
-  -d '{"app_name": "My App", "version": "1.0.0", "description": "This is my app"}'
+  -d '{"app_name": "My App", "version": "1.0.0", "description": "This is my app", "author": "John Doe"}'
 ```
 
 ### Get app details
@@ -76,7 +115,7 @@ curl http://127.0.0.1:5000/get-all-apps
 ```bash
 curl -X PUT http://127.0.0.1:5000/update-app/1 \
   -H "Content-Type: application/json" \
-  -d '{"app_name": "Updated App", "version": "2.0.0", "description": "Updated description"}'
+  -d '{"app_name": "Updated App", "version": "2.0.0", "description": "Updated description", "author": "Jane Smith"}'
 ```
 
 ### Delete an app
@@ -86,15 +125,50 @@ curl -X DELETE http://127.0.0.1:5000/delete-app/1
 
 ## Testing
 
-Run tests using pytest:
+Run the test suite with pytest:
 ```bash
+# Run all tests
 pytest
+
+# Run with verbose output
+pytest -v
+
+# Run a specific test file
+pytest tests/test_api.py
+```
+
+## Environment Configuration
+
+The application supports different environments:
+
+- **Development**: Debug mode enabled, using SQLite database
+- **Testing**: Using in-memory SQLite database
+- **Production**: Using environment variable for database URL (configurable)
+
+To set the environment:
+```bash
+set FLASK_ENV=development|testing|production  # Windows
+export FLASK_ENV=development|testing|production  # Linux/Mac
 ```
 
 ## Project Structure
 
-- `app.py`: Main application file with API routes
-- `models.py`: Database models for app data
+- `app.py`: Main application file with API routes and error handling
+- `models.py`: Database models with validation and relationships
+- `config.py`: Environment-specific configuration
 - `templates/`: HTML templates for web interface
 - `static/`: CSS and other static files
 - `tests/`: Test files for the application
+- `migrations/`: Database migration scripts
+
+## Sample Data
+
+After setting up, you can populate the database with sample data:
+
+```bash
+curl -X POST http://127.0.0.1:5000/add-app -H "Content-Type: application/json" -d '{"app_name": "Weather App", "version": "1.0.0", "description": "Real-time weather forecasts", "author": "John Smith"}'
+
+curl -X POST http://127.0.0.1:5000/add-app -H "Content-Type: application/json" -d '{"app_name": "Task Manager", "version": "2.1.3", "description": "Productivity tool for task management", "author": "Jane Doe"}'
+
+curl -X POST http://127.0.0.1:5000/add-app -H "Content-Type: application/json" -d '{"app_name": "Recipe Finder", "version": "0.9.5", "description": "Find recipes based on available ingredients", "author": "Chef Alex"}'
+```
