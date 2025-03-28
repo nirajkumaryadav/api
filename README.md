@@ -1,14 +1,34 @@
 # Flask API for App Management
 
-This project provides a Flask API for managing app details, including adding, retrieving, and deleting apps.
+This API allows you to manage application details including creating, retrieving, updating, and deleting app records.
+
+## Features
+
+- Create new app entries with name, version, description, and author
+- Retrieve individual app details by ID
+- Get a list of all apps
+- Update existing app information
+- Delete apps
+- Web interface for basic navigation
 
 ## API Endpoints
 
-- `POST /add-app`: Add app details to the database
-- `GET /get-app/{id}`: Retrieve app details by ID
-- `DELETE /delete-app/{id}`: Remove an app by ID
+| Endpoint | Method | Description | Required Parameters |
+|----------|--------|-------------|---------------------|
+| `/add-app` | POST | Add a new app | `app_name`, `version` |
+| `/get-app/{id}` | GET | Retrieve app by ID | `id` (in URL) |
+| `/get-all-apps` | GET | Retrieve all apps | None |
+| `/update-app/{id}` | PUT | Update an app | `id` (in URL) |
+| `/delete-app/{id}` | DELETE | Delete an app | `id` (in URL) |
 
 ## Setup and Installation
+
+### Prerequisites
+
+- Python 3.10 or higher
+- pip (Python package manager)
+
+### Installation
 
 1. Clone this repository:
 ```bash
@@ -45,6 +65,18 @@ curl -X POST http://127.0.0.1:5000/add-app \
 ### Get app details
 ```bash
 curl http://127.0.0.1:5000/get-app/1
+```
+
+### Get all apps
+```bash
+curl http://127.0.0.1:5000/get-all-apps
+```
+
+### Update an app
+```bash
+curl -X PUT http://127.0.0.1:5000/update-app/1 \
+  -H "Content-Type: application/json" \
+  -d '{"app_name": "Updated App", "version": "2.0.0", "description": "Updated description"}'
 ```
 
 ### Delete an app
